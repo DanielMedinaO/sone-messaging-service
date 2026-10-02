@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: sone-messaging-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:sone_messaging}
+    username: ${DB_USERNAME:sone_messaging}
+    password: ${DB_PASSWORD:sone_messaging}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        default_schema: main
+  flyway:
+    enabled: true
+    default-schema: public

@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sone-messaging-postgres
+    environment:
+      POSTGRES_DB: sone_messaging
+      POSTGRES_USER: sone_messaging
+      POSTGRES_PASSWORD: sone_messaging
+    ports:
+      # Host port 5433 because the main SONE backend already uses 5432
+      - "5433:5432"
+    volumes:
+      - sone_messaging_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sone_messaging -d sone_messaging"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  sone_messaging_postgres_data:
