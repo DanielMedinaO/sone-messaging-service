@@ -19,3 +19,7 @@ sone:
   security:
     jwt:
       public-key-location: ${JWT_PUBLIC_KEY_LOCATION:file:./keys/public.pem}
+  marketplace:
+    base-url: ${MARKETPLACE_BASE_URL:http://localhost:3000}
+    connect-timeout: 2s
+    read-timeout: 3s

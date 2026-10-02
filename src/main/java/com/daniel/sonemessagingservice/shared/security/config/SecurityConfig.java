@@ -2,6 +2,7 @@ package com.daniel.sonemessagingservice.shared.security.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -21,6 +22,8 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/conversations")
+                        .hasAllAuthorities(SoneJwtAuthenticationConverter.STATUS_ACTIVE, "APP_CUSTOMER")
                         .requestMatchers("/api/**").hasAuthority(SoneJwtAuthenticationConverter.STATUS_ACTIVE)
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth -> oauth
