@@ -15,3 +15,7 @@ spring:
   flyway:
     enabled: true
     default-schema: public
+sone:
+  security:
+    jwt:
+      public-key-location: ${JWT_PUBLIC_KEY_LOCATION:file:./keys/public.pem}
