@@ -22,6 +22,8 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers("/api/docs", "/api/swagger-ui/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
+                                "/v3/api-docs.yaml").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/conversations")
                         .hasAllAuthorities(SoneJwtAuthenticationConverter.STATUS_ACTIVE, "APP_CUSTOMER")
                         .requestMatchers("/api/**").hasAuthority(SoneJwtAuthenticationConverter.STATUS_ACTIVE)

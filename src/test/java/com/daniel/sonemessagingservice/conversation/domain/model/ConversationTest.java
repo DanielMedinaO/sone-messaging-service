@@ -46,4 +46,22 @@ class ConversationTest {
     void startsWithoutLastMessageAt() {
         assertNull(Conversation.create(customerId, partnerId).getLastMessageAt());
     }
+
+    @Test
+    void registerMessage_updatesLastMessageAtAndUpdatedAt() {
+        Conversation c = Conversation.create(UUID.randomUUID(), UUID.randomUUID());
+        assertNull(c.getLastMessageAt());
+        java.time.Instant at = java.time.Instant.parse("2030-01-01T10:00:00Z");
+
+        c.registerMessage(at);
+
+        assertEquals(at, c.getLastMessageAt());
+        assertEquals(at, c.getUpdatedAt());
+    }
+
+    @Test
+    void registerMessage_nullRejected() {
+        Conversation c = Conversation.create(UUID.randomUUID(), UUID.randomUUID());
+        assertThrows(NullPointerException.class, () -> c.registerMessage(null));
+    }
 }

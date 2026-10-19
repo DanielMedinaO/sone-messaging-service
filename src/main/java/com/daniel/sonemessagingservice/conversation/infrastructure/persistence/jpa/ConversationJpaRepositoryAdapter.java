@@ -26,6 +26,11 @@ public class ConversationJpaRepositoryAdapter implements ConversationRepository 
     }
 
     @Override
+    public Optional<Conversation> findById(UUID conversationId) {
+        return springDataRepository.findById(conversationId).map(mapper::toDomain);
+    }
+
+    @Override
     public Optional<Conversation> findByCustomerIdAndPartnerId(UUID customerId, UUID partnerId) {
         return springDataRepository.findByCustomerIdAndPartnerId(customerId, partnerId)
                 .map(mapper::toDomain);

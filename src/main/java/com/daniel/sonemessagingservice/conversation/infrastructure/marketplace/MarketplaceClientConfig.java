@@ -15,6 +15,7 @@ public class MarketplaceClientConfig {
     @Bean
     RestClient marketplaceRestClient(MarketplaceProperties properties) {
         HttpClient httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(properties.connectTimeout())
                 .build();
         JdkClientHttpRequestFactory factory = new JdkClientHttpRequestFactory(httpClient);

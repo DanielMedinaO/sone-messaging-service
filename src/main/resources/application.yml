@@ -20,6 +20,13 @@ sone:
     jwt:
       public-key-location: ${JWT_PUBLIC_KEY_LOCATION:file:./keys/public.pem}
   marketplace:
-    base-url: ${MARKETPLACE_BASE_URL:http://localhost:3000}
+    base-url: ${MARKETPLACE_BASE_URL:http://localhost:3001}
     connect-timeout: 2s
     read-timeout: 3s
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /api/docs
+  paths-to-match: /api/**
+  show-actuator: false

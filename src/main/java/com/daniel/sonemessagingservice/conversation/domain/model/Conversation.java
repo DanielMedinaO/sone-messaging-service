@@ -11,8 +11,8 @@ public class Conversation {
     private final UUID partnerId;
     private final ConversationStatus status;
     private final Instant createdAt;
-    private final Instant updatedAt;
-    private final Instant lastMessageAt;
+    private Instant updatedAt;
+    private Instant lastMessageAt;
 
     private Conversation(UUID id, UUID customerId, UUID partnerId, ConversationStatus status,
                          Instant createdAt, Instant updatedAt, Instant lastMessageAt) {
@@ -42,6 +42,13 @@ public class Conversation {
                                             ConversationStatus status, Instant createdAt,
                                             Instant updatedAt, Instant lastMessageAt) {
         return new Conversation(id, customerId, partnerId, status, createdAt, updatedAt, lastMessageAt);
+    }
+
+    /** Records that a message was sent, moving lastMessageAt and updatedAt to the message's creation time. */
+    public void registerMessage(Instant messageCreatedAt) {
+        Objects.requireNonNull(messageCreatedAt, "messageCreatedAt must not be null");
+        this.lastMessageAt = messageCreatedAt;
+        this.updatedAt = messageCreatedAt;
     }
 
     public UUID getId() { return id; }
