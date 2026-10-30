@@ -19,6 +19,9 @@ sone:
   security:
     jwt:
       public-key-location: ${JWT_PUBLIC_KEY_LOCATION:file:./keys/public.pem}
+  websocket:
+    # Development default only: production MUST restrict this to the real client origins.
+    allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:*}
   marketplace:
     base-url: ${MARKETPLACE_BASE_URL:http://localhost:3001}
     connect-timeout: 2s

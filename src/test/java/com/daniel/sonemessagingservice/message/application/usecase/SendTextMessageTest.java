@@ -16,7 +16,10 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
+import org.springframework.context.ApplicationEventPublisher;
+import com.daniel.sonemessagingservice.message.application.event.MessageSentEvent;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.daniel.sonemessagingservice.conversation.domain.model.Conversation;
@@ -39,6 +42,7 @@ class SendTextMessageTest {
 
     @Mock ConversationRepository conversationRepository;
     @Mock MessageRepository messageRepository;
+    @Mock ApplicationEventPublisher eventPublisher;
 
     SendTextMessage useCase;
     final UUID customerId = UUID.randomUUID();
@@ -48,7 +52,7 @@ class SendTextMessageTest {
     @BeforeEach
     void setUp() {
         useCase = new SendTextMessage(new ConversationAccess(conversationRepository),
-                conversationRepository, messageRepository, Clock.fixed(NOW, ZoneOffset.UTC));
+                conversationRepository, messageRepository, Clock.fixed(NOW, ZoneOffset.UTC), eventPublisher);
         conversation = Conversation.create(customerId, partnerId);
     }
 
@@ -81,6 +85,17 @@ class SendTextMessageTest {
         stubPersistence(0);
         Message m = useCase.execute(conversation.getId(), partner(partnerId), "Hola");
         assertEquals(partnerId, m.getSenderId());
+    }
+
+    @Test
+    void publishesMessageSentEventWithParticipants() {
+        stubPersistence(0);
+        Message m = useCase.execute(conversation.getId(), partner(partnerId), "Hola");
+        ArgumentCaptor<MessageSentEvent> captor = ArgumentCaptor.forClass(MessageSentEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertSame(m, captor.getValue().message());
+        assertEquals(customerId, captor.getValue().customerId());
+        assertEquals(partnerId, captor.getValue().partnerId());
     }
 
     @Test
@@ -130,6 +145,7 @@ class SendTextMessageTest {
                 () -> useCase.execute(conversation.getId(), customer(customerId), "Hola"));
         verify(messageRepository, never()).save(any());
         verify(conversationRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test
@@ -155,6 +171,7 @@ class SendTextMessageTest {
         assertThrows(IllegalArgumentException.class,
                 () -> useCase.execute(conversation.getId(), customer(customerId), "   "));
         verify(messageRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     private void stubPersistenceNoSave() {

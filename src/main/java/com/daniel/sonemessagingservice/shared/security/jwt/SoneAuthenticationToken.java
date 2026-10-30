@@ -29,4 +29,9 @@ public class SoneAuthenticationToken extends AbstractAuthenticationToken {
     public AuthenticatedUser getPrincipal() {
         return user;
     }
+
+    @Override
+    public String getName() {
+        return user.id().toString();
+    }
 }

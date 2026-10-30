@@ -24,6 +24,8 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/docs", "/api/swagger-ui/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**",
                                 "/v3/api-docs.yaml").permitAll()
+                        // Handshake only; real authentication happens in the STOMP CONNECT frame.
+                        .requestMatchers("/ws", "/ws/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/conversations")
                         .hasAllAuthorities(SoneJwtAuthenticationConverter.STATUS_ACTIVE, "APP_CUSTOMER")
                         .requestMatchers("/api/**").hasAuthority(SoneJwtAuthenticationConverter.STATUS_ACTIVE)
