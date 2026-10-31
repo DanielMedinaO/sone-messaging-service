@@ -134,6 +134,32 @@ class WebSocketRealtimeIntegrationTest {
     }
 
     @Test
+    void imageMessageDeliveredToBothParticipantsAfterCommit() throws Exception {
+        UUID customerId = UUID.randomUUID();
+        UUID partnerId = UUID.randomUUID();
+        StompSession customer = connect("Bearer " + token(customerId, "CUSTOMER"));
+        StompSession partner = connect("Bearer " + token(partnerId, "PARTNER"));
+        BlockingQueue<String> customerQ = subscribe(customer);
+        BlockingQueue<String> partnerQ = subscribe(partner);
+        Thread.sleep(500);
+
+        var attachment = com.daniel.sonemessagingservice.message.domain.model.MessageAttachment.create("key-1",
+                "photo.jpg", "image/jpeg", 1234, "mock://sone-messaging/key-1", Instant.now());
+        Message m = Message.createImage(UUID.randomUUID(), partnerId, java.util.List.of(attachment), Instant.now());
+        tx.executeWithoutResult(s -> publisher.publishEvent(new MessageSentEvent(m, customerId, partnerId)));
+
+        for (BlockingQueue<String> q : java.util.List.of(customerQ, partnerQ)) {
+            String frame = q.poll(5, TimeUnit.SECONDS);
+            assertNotNull(frame);
+            assertTrue(frame.contains("\"type\":\"IMAGE\""));
+            assertTrue(frame.contains("\"url\":\"mock://sone-messaging/key-1\""));
+            assertTrue(frame.contains("\"attachments\""));
+        }
+        customer.disconnect();
+        partner.disconnect();
+    }
+
+    @Test
     void connectWithoutJwtIsRejectedAfterHandshake() {
         assertThrows(Exception.class, () -> connect(null));
     }

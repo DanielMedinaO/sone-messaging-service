@@ -3,6 +3,7 @@ package com.daniel.sonemessagingservice.message.domain.model;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -58,5 +59,58 @@ class MessageTest {
     void tooLongContent() {
         assertThrows(IllegalArgumentException.class,
                 () -> Message.createText(conversationId, senderId, "a".repeat(2001)));
+    }
+
+    private MessageAttachment attachment() {
+        return MessageAttachment.create(UUID.randomUUID().toString(), "photo.jpg", "image/jpeg", 1000,
+                "mock://sone-messaging/x", Instant.now());
+    }
+
+    @Test
+    void createImage_valid() {
+        Message m = Message.createImage(conversationId, senderId, List.of(attachment(), attachment()), Instant.now());
+        assertNotNull(m.getId());
+        assertEquals(MessageType.IMAGE, m.getType());
+        assertNull(m.getContent());
+        assertEquals(2, m.getAttachments().size());
+        assertEquals(conversationId, m.getConversationId());
+        assertEquals(senderId, m.getSenderId());
+    }
+
+    @Test
+    void createImage_acceptsThree() {
+        assertDoesNotThrow(() -> Message.createImage(conversationId, senderId,
+                List.of(attachment(), attachment(), attachment()), Instant.now()));
+    }
+
+    @Test
+    void createImage_zeroAttachmentsRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Message.createImage(conversationId, senderId, List.of(), Instant.now()));
+    }
+
+    @Test
+    void createImage_moreThanThreeRejected() {
+        assertThrows(IllegalArgumentException.class, () -> Message.createImage(conversationId, senderId,
+                List.of(attachment(), attachment(), attachment(), attachment()), Instant.now()));
+    }
+
+    @Test
+    void createImage_requiresConversationAndSender() {
+        assertThrows(NullPointerException.class,
+                () -> Message.createImage(null, senderId, List.of(attachment()), Instant.now()));
+        assertThrows(NullPointerException.class,
+                () -> Message.createImage(conversationId, null, List.of(attachment()), Instant.now()));
+    }
+
+    @Test
+    void text_hasNoAttachments() {
+        assertTrue(Message.createText(conversationId, senderId, "Hola").getAttachments().isEmpty());
+    }
+
+    @Test
+    void attachments_areImmutable() {
+        Message m = Message.createImage(conversationId, senderId, List.of(attachment()), Instant.now());
+        assertThrows(UnsupportedOperationException.class, () -> m.getAttachments().clear());
     }
 }

@@ -1,8 +1,11 @@
 package com.daniel.sonemessagingservice.message.infrastructure.web;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,10 +14,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.daniel.sonemessagingservice.message.application.exception.InvalidImageUploadException;
+import com.daniel.sonemessagingservice.message.application.port.ImageUpload;
 import com.daniel.sonemessagingservice.message.application.usecase.GetConversationMessages;
+import com.daniel.sonemessagingservice.message.application.usecase.SendImageMessage;
 import com.daniel.sonemessagingservice.message.application.usecase.SendTextMessage;
 import com.daniel.sonemessagingservice.shared.documentation.config.OpenApiConfig;
 import com.daniel.sonemessagingservice.shared.security.model.AuthenticatedUser;
@@ -32,14 +40,17 @@ import jakarta.validation.constraints.Min;
 
 @RestController
 @RequestMapping("/api/v1/conversations/{conversationId}/messages")
-@Tag(name = "Messages", description = "Text messages inside a conversation")
+@Tag(name = "Messages", description = "TEXT and IMAGE messages inside a conversation")
 public class MessageController {
 
     private final SendTextMessage sendTextMessage;
+    private final SendImageMessage sendImageMessage;
     private final GetConversationMessages getConversationMessages;
 
-    public MessageController(SendTextMessage sendTextMessage, GetConversationMessages getConversationMessages) {
+    public MessageController(SendTextMessage sendTextMessage, SendImageMessage sendImageMessage,
+                             GetConversationMessages getConversationMessages) {
         this.sendTextMessage = sendTextMessage;
+        this.sendImageMessage = sendImageMessage;
         this.getConversationMessages = getConversationMessages;
     }
 
@@ -66,6 +77,48 @@ public class MessageController {
                                 @PathVariable UUID conversationId,
                                 @Valid @RequestBody SendMessageRequest request) {
         return MessageResponse.from(sendTextMessage.execute(conversationId, user, request.text()));
+    }
+
+    @PostMapping(path = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Send an image message",
+            description = "Sends a single IMAGE message with 1 to 3 images (multipart part 'files', repeated "
+                    + "once per image). Allowed formats: image/jpeg, image/png, image/webp; maximum 5 MB per "
+                    + "image. The sender is always the authenticated user (JWT). The whole message counts as "
+                    + "one message towards the 200 messages per UTC day limit of the conversation. Binary "
+                    + "content is never sent over WebSocket; only metadata and URLs.",
+            security = @SecurityRequirement(name = OpenApiConfig.BEARER_AUTH))
+    @ApiResponse(responseCode = "201", description = "Message persisted")
+    @ApiResponse(responseCode = "400", description = "No files, more than 3 files, empty file or invalid UUID",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "401", description = "JWT missing, expired, invalid or not accepted",
+            content = @Content)
+    @ApiResponse(responseCode = "403", description = "User is not ACTIVE or does not belong to the conversation",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "404", description = "Conversation does not exist",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "413", description = "An image is larger than 5 MB",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "415", description = "Image type not supported (only jpeg, png, webp)",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "429", description = "Daily limit of 200 messages (UTC) reached for the conversation",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    @ApiResponse(responseCode = "503", description = "File storage unavailable; nothing was persisted",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public MessageResponse sendImages(@AuthenticationPrincipal AuthenticatedUser user,
+                                      @PathVariable UUID conversationId,
+                                      @Parameter(description = "1 to 3 images (jpeg, png, webp), max 5 MB each")
+                                      @RequestPart(name = "files", required = false) List<MultipartFile> files) {
+        List<ImageUpload> uploads = files == null ? List.of() : files.stream().map(MessageController::toUpload).toList();
+        return MessageResponse.from(sendImageMessage.execute(conversationId, user, uploads));
+    }
+
+    private static ImageUpload toUpload(MultipartFile file) {
+        try {
+            return new ImageUpload(file.getOriginalFilename(), file.getContentType(), file.getSize(), file.getBytes());
+        } catch (IOException e) {
+            throw new InvalidImageUploadException("Could not read the uploaded image");
+        }
     }
 
     @GetMapping

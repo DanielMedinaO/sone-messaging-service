@@ -28,7 +28,7 @@ public class MessageJpaEntity {
     @Column(nullable = false)
     private MessageType type;
 
-    @Column(nullable = false, columnDefinition = "text")
+    @Column(columnDefinition = "text")
     private String content;
 
     @Column(name = "created_at", nullable = false)

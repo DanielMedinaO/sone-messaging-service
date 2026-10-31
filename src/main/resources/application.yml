@@ -15,6 +15,10 @@ spring:
   flyway:
     enabled: true
     default-schema: public
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 16MB
 sone:
   security:
     jwt:
@@ -22,6 +26,9 @@ sone:
   websocket:
     # Development default only: production MUST restrict this to the real client origins.
     allowed-origin-patterns: ${WEBSOCKET_ALLOWED_ORIGIN_PATTERNS:*}
+  storage:
+    # Only 'mock' is available for now; a future S3 adapter will be selected here.
+    provider: ${STORAGE_PROVIDER:mock}
   marketplace:
     base-url: ${MARKETPLACE_BASE_URL:http://localhost:3001}
     connect-timeout: 2s
